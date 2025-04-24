@@ -1,4 +1,4 @@
-# ✅ Итоговая версия combined_archive_v2.py — с поддержкой:
+# ✅ Итоговая версия combined_archive.py — с поддержкой:
 # - конфигурации через config.json
 # - выделенных master/players ключей и типов
 # - оглавления только по сценам мастера
@@ -20,8 +20,8 @@ def load_config(path):
 def get_paths_and_keys_from_config(config):
     input_dir = config.get("input_folder", "archive")
     output_dir = config.get("output_folder", "result")
-    output_file = config.get("output_filename_v2", "archive_sessions_v2.json")
-    meta = config.get("metadata_sessions_v2", {})
+    output_file = config.get("output_filename", "archive_sessions2222.json")
+    meta = config.get("metadata_sessions", {})
 
     key_master = config.get("key_master", "Мастер подземелий")
     key_players = config.get("key_players", "Действия игроков")

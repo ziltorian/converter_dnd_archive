@@ -7,8 +7,8 @@ from typing import Any, Dict, List
 with open("config.json", "r", encoding="utf-8") as f:
     config = json.load(f)
 
-INPUT_DIR = config.get("INPUT_DIR", "characters")
-OUTPUT_DIR = config.get("OUTPUT_DIR", "result")
+input_dir = config.get("input_characters", "characters")
+output_dir = config.get("output_folder", "result")
 
 # --- Регулярные выражения для разбора строк ---
 header_pattern = re.compile(r"^(#{1,10})\s*(.+?):\s*$")          # Заголовки ###–######
@@ -108,14 +108,14 @@ def parse_character_file(text: str) -> Dict[str, Any]:
 
 # --- Основной обработчик файлов ---
 def process_files():
-    if not os.path.exists(OUTPUT_DIR):
-        os.makedirs(OUTPUT_DIR)
-        print(f"[Создана папка]: {OUTPUT_DIR}")
+    if not os.path.exists(output_dir):
+        os.makedirs(output_dir)
+        print(f"[Создана папка]: {output_dir}")
 
-    for filename in os.listdir(INPUT_DIR):
+    for filename in os.listdir(input_dir):
         if filename.endswith(".txt"):
-            input_path = os.path.join(INPUT_DIR, filename)
-            output_path = os.path.join(OUTPUT_DIR, filename.replace(".txt", ".json"))
+            input_path = os.path.join(input_dir, filename)
+            output_path = os.path.join(output_dir, filename.replace(".txt", ".json"))
 
             print(f"[Обработка файла]: {filename}")
 
@@ -132,5 +132,5 @@ def process_files():
 
 # --- Запуск ---
 if __name__ == "__main__":
-    print(f"[Старт] Чтение из: {INPUT_DIR}  Сохранение в: {OUTPUT_DIR}")
+    print(f"[Старт] Чтение из: {input_dir}  Сохранение в: {output_dir}")
     process_files()

@@ -36,7 +36,7 @@ convertor/
 
 ```bash
 git clone https://github.com/ziltorian/converter_dnd_archive.git
-cd dndconverter
+cd converter_dnd_archive
 ```
 
 #### 2. Установи виртуальную среду (по желанию, но рекомендуется)

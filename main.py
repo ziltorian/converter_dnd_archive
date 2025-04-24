@@ -8,7 +8,7 @@ if os.name == 'nt':
 
 # Список скриптов для запуска
 scripts_to_run = [
-    "combined_archive_v2.py",
+    "combined_archive.py",
     "check_system_messages.py",
     "converter_characters.py"
 ]
