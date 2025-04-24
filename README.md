@@ -29,12 +29,13 @@ convertor/
 
 ### 📥 Установка из GitHub
 
-> Репозиторий: [https://github.com/ziltorian/dndconverter](https://github.com/ziltorian/dndconverter)
+> Репозиторий: [https://github.com/ziltorian/converter_dnd_archive.git
+](https://github.com/ziltorian/converter_dnd_archive.git)
 
 #### 1. Клонируй репозиторий
 
 ```bash
-git clone https://github.com/ziltorian/dndconverter.git
+git clone https://github.com/ziltorian/converter_dnd_archive.git
 cd dndconverter
 ```
 
