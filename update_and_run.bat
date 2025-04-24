@@ -2,7 +2,7 @@
 SETLOCAL ENABLEDELAYEDEXPANSION
 
 echo 🔄 Проверка обновлений с GitHub...
-git pull https://github.com/ziltorian/dndconverter master
+git pull https://github.com/ziltorian/converter_dnd_archive master
 
 echo 📦 Установка/обновление зависимостей...
 pip install -r requirements.txt
