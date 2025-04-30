@@ -11,73 +11,77 @@ input_dir = config.get("input_characters", "characters")
 output_dir = config.get("output_folder", "result")
 
 # --- Регулярные выражения для разбора строк ---
-header_pattern = re.compile(r"^(#{1,10})\s*(.+?):\s*$")          # Заголовки ###–######
-pair_pattern = re.compile(r"^\s*-\s*([^:]+):\s*(.*)$")          # Ключ: значение
-list_pattern = re.compile(r"^\s*-\s*(?!.*:)(.+)$")              # Элемент списка
+header_pattern = re.compile(r"^(#{1,10})\s*(.+?)(:)?\s*$")  # Заголовки ###–######
+pair_pattern = re.compile(r"^\s*(?:[-—])?\s*([^\s][^:]{0,50}):(?:\s+(.*))?$")
+# pair_pattern = re.compile(r"^\s*-?\s*([^:]+):\s*(.*)$")  # Ключ: значение
+list_pattern = re.compile(r"^\s*[-–—]\s*(?!.*:)(.+)$")  # Элемент списка
+
 
 # --- Разбор структурированного текста секции ---
 def parse_structured_text(text: str) -> Dict[str, Any]:
     lines = text.strip().splitlines()
     root: Dict[str, Any] = {}
     stack: List[Dict[str, Any]] = [root]
-    levels: List[int] = [0]  # Корень имеет уровень 0
+    levels: List[int] = [0]
+
+    current_key_for_list = None  # <- добавлено
 
     for line in lines:
         line = line.strip()
         if not line:
             continue
 
-        header_match = re.match(r"^(#{1,10})\s*(.+?):\s*$", line)
-        pair_match = re.match(r"^\s*-\s*([^:]+):\s*(.*)$", line)
-        list_match = re.match(r"^\s*-\s*(?!.*:)(.+)$", line)
+        header_match = header_pattern.match(line)
+        pair_match = pair_pattern.match(line)
+        list_match = list_pattern.match(line)
 
         if header_match:
             level = len(header_match.group(1))
             title = header_match.group(2).strip()
-
-            # Закрываем уровни до нужного
             while levels and levels[-1] >= level:
                 stack.pop()
                 levels.pop()
-
             parent = stack[-1]
             parent[title] = {}
             stack.append(parent[title])
             levels.append(level)
+            current_key_for_list = None
             continue
 
-        # Ключ: значение
         if pair_match:
             key = pair_match.group(1).strip()
-            value = pair_match.group(2).strip()
-            stack[-1][key] = value
+            value = pair_match.group(2).strip() if pair_match.group(2) else ""
+
+            if value:
+                stack[-1][key] = value
+                current_key_for_list = None
+            else:
+                stack[-1][key] = []
+                current_key_for_list = key
             continue
 
-        # Элемент списка
         if list_match:
             item = list_match.group(1).strip()
+            if current_key_for_list:
+                stack[-1][current_key_for_list].append(item)
+            else:
+                if "_list" not in stack[-1]:
+                    stack[-1]["_list"] = []
+                stack[-1]["_list"].append(item)
+            continue
+
+        # если это просто обычный абзац (не пара, не список, не заголовок)
+        if line and not line.startswith("-") and not header_match:
             current = stack[-1]
 
-            # если блок содержит только один пустой ключ — преобразовать его в список
-            if (
-                len(current) == 1
-                and list(current.values())[0] == ""
-                and "_list" not in current
-            ):
-                key = list(current.keys())[0]
-                current[key] = [item]
-            elif (
-                len(current) == 1
-                and isinstance(list(current.values())[0], list)
-            ):
-                key = list(current.keys())[0]
-                current[key].append(item)
-            else:
-                if "_list" not in current:
-                    current["_list"] = []
-                current["_list"].append(item)
+            # если ключ недавно открыт, но его значение — строка, преврати в список
+            if isinstance(current, dict):
+                if "_text" not in current:
+                    current["_text"] = []
+                current["_text"].append(line)
 
     return root
+
 
 def simplify_structure(data: Any) -> Any:
     """
@@ -87,6 +91,8 @@ def simplify_structure(data: Any) -> Any:
         # Если словарь содержит только _list — заменить на сам список
         if set(data.keys()) == {"_list"}:
             return simplify_structure(data["_list"])
+        if set(data.keys()) == {"_text"}:
+            return simplify_structure(data["_text"])
 
         # Рекурсивно применить ко всем значениям
         return {k: simplify_structure(v) for k, v in data.items()}
@@ -99,12 +105,37 @@ def simplify_structure(data: Any) -> Any:
 
 # --- Разделение на секции по "---" и разбор каждой ---
 def parse_character_file(text: str) -> Dict[str, Any]:
-    sections = re.split(r"^---+\s*$", text, flags=re.MULTILINE)
-    parsed: Dict[str, Any] = {}
-    for section in sections:
-        structured = parse_structured_text(section)
-        parsed.update(structured)
-    return parsed
+    has_top_level_header = re.search(r"^#\s*(.+)", text, flags=re.MULTILINE)
+
+    if has_top_level_header:
+        root_title = has_top_level_header.group(1).strip()
+        body = re.sub(r"^#\s*.+", "", text, count=1, flags=re.MULTILINE)
+        sections = re.split(r"^---+\s*$", body, flags=re.MULTILINE)
+        container = {}
+
+        for section in sections:
+            structured = parse_structured_text(section)
+            if len(structured) == 1:
+                key = list(structured.keys())[0]
+                container[key] = structured[key]
+            else:
+                container.update(structured)
+
+        return {root_title: simplify_structure(container)}
+
+    else:
+        sections = re.split(r"^---+\s*$", text, flags=re.MULTILINE)
+        parsed: Dict[str, Any] = {}
+        for section in sections:
+            structured = parse_structured_text(section)
+            if len(structured) == 1:
+                key = list(structured.keys())[0]
+                parsed[key] = structured[key]
+            else:
+                parsed.update(structured)
+
+        return simplify_structure(parsed)
+
 
 # --- Основной обработчик файлов ---
 def process_files():
@@ -129,6 +160,7 @@ def process_files():
                 json.dump(structured, out, ensure_ascii=False, indent=2)
 
             print(f"[Сохранён]: {output_path}")
+
 
 # --- Запуск ---
 if __name__ == "__main__":
