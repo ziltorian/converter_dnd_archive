@@ -10,7 +10,8 @@ if os.name == 'nt':
 scripts_to_run = [
     "combined_archive.py",
     "check_system_messages.py",
-    "converter_characters.py"
+    "converter_characters.py",
+    "generate_outline.py"
 ]
 
 print("\nЗапуск скриптов обработки архива:\n")

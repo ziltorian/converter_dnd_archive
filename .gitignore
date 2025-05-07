@@ -17,5 +17,7 @@ venv/
 Thumbs.db
 
 # Results and logs
+result/
 result/*.log
 result/*.txt
+result/*.json
